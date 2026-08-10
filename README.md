@@ -7,3 +7,35 @@ A lightweight CRUD API built with Python and FastAPI that manages an in-memory t
 1. Install requirements:
    ```bash
    pip install fastapi uvicorn pydantic
+
+
+## API Endpoints
+
+| Method | Endpoint | Description | Status Codes |
+| :--- | :--- | :--- | :--- |
+| GET | / | API Metadata | 200 OK |
+| GET | /health | Server Health Check | 200 OK |
+| GET | /tasks | List all tasks | 200 OK |
+| GET | /tasks/{id} | Read a single task | 200 OK, 404 Not Found |
+| POST | /tasks | Create a task | 201 Created, 400 Bad Request |
+| PUT | /tasks/{id} | Update a task | 200 OK, 400 Bad Request, 404 Not Found |
+| DELETE | /tasks/{id} | Delete a task | 204 No Content, 404 Not Found |
+
+
+
+## Sample Output
+
+`curl -i http://localhost:8000/tasks`
+ output:
+
+## Sample Output
+
+```http
+HTTP/1.1 200 OK
+date: Mon, 10 Aug 2026 19:12:30 GMT
+server: uvicorn
+content-length: 137
+content-type: application/json
+
+[{"id":1,"title":"Buy groceries","done":false},{"id":2,"title":"Read a book","done":true},{"id":3,"title":"Build CRUD API","done":false}]
+```
