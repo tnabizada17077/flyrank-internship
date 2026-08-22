@@ -13,7 +13,6 @@ load_dotenv()
 app = FastAPI(title="FlyRank LLM Triage API")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 class CategoryEnum(str, Enum):
     billing = "billing"
@@ -57,6 +56,7 @@ def log_quarantine(raw_output: str, error_msg: str, user_input: str):
 
 @app.post("/triage", response_model=TriageOutput)
 def triage_message(payload: TriageInput):
+    # Kill switch
     if os.getenv("LLM_ENABLED", "true").lower() == "false":
         return TriageOutput(
             category=CategoryEnum.general,
@@ -66,6 +66,7 @@ def triage_message(payload: TriageInput):
             reason="LLM feature disabled via kill switch"
         )
 
+    # Stub mode
     if os.getenv("LLM_STUB", "0") == "1":
         return TriageOutput(
             category=CategoryEnum.bug,
@@ -75,12 +76,17 @@ def triage_message(payload: TriageInput):
             reason="Stub mode active"
         )
 
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY is not set in .env file")
+
+    client = genai.Client(api_key=api_key)
     start_time = time.time()
     raw_response_text = ""
     
     try:
         response = client.models.generate_content(
-            model="gemini-3.5-flash",
+            model="gemini-2.0-flash",
             contents=f"User Message: {payload.text}",
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
@@ -105,7 +111,7 @@ def triage_message(payload: TriageInput):
                 f"Fix the error and return JSON strictly matching the schema."
             )
             repair_response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-2.0-flash",
                 contents=f"User Message: {payload.text}",
                 config=types.GenerateContentConfig(
                     system_instruction=repair_prompt,
@@ -122,4 +128,5 @@ def triage_message(payload: TriageInput):
                 detail=f"Model output failed schema validation after repair retry: {str(repair_err)}"
             )
     except Exception as e:
+        print(f"[LLM ERROR] {str(e)}")
         raise HTTPException(status_code=500, detail=f"LLM call failed: {str(e)}")

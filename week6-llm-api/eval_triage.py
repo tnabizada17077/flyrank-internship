@@ -1,5 +1,4 @@
 import json
-import time
 import requests
 
 def run_eval():
@@ -25,9 +24,6 @@ def run_eval():
         except Exception as e:
             print(f"[ERROR] Could not reach server: {e}")
             return
-        
-        # Pause to stay within free-tier Rate Limits (RPM)
-        time.sleep(1.5)
 
     print(f"\nEval Score: {passed}/{total} Passed ({(passed/total)*100:.1f}%)")
 
