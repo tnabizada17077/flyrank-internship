@@ -1,0 +1,10 @@
+[
+  {"input": "I cannot access my invoice for last month.", "expected_category": "billing"},
+  {"input": "App crashes every time I click Save.", "expected_category": "bug"},
+  {"input": "Please add dark mode support to the dashboard.", "expected_category": "feature_request"},
+  {"input": "Hello team, hope you are having a nice day!", "expected_category": "general"},
+  {"input": "You double charged my Visa card!", "expected_category": "billing"},
+  {"input": "API throws 500 error on POST requests.", "expected_category": "bug"},
+  {"input": "Is it possible to export CSV files?", "expected_category": "feature_request"},
+  {"input": "asdfghjkl random text string", "expected_category": "general"}
+]
