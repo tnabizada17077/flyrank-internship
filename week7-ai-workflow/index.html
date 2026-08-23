@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual AI Workflow Builder</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { display: flex; flex-direction: column; height: 100vh; background-color: #0f172a; color: #f8fafc; }
+        header { padding: 16px 24px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+        .main { display: flex; flex: 1; overflow: hidden; }
+        #network { flex: 1; height: 100%; background: #090d16; }
+        .sidebar { width: 380px; background: #1e293b; border-left: 1px solid #334155; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        textarea { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 12px; }
+        button { padding: 10px 16px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        button:hover { background: #1d4ed8; }
+        .logs-box { flex: 1; background: #020617; border: 1px solid #1e293b; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 11px; color: #4ade80; overflow-y: auto; max-height: 350px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>AI Decision Workflow Builder</h2>
+        <div>
+            <button onclick="addNode()" style="background: #334155; margin-right: 8px;">+ Add Decision Node</button>
+            <button onclick="runWorkflow()">Execute Workflow</button>
+        </div>
+    </header>
+
+    <div class="main">
+        <div id="network"></div>
+        <div class="sidebar">
+            <div>
+                <label style="font-size: 12px; font-weight: bold; margin-bottom: 6px; display: block;">Input Context Payload</label>
+                <textarea id="inputText" rows="4">Our server database is down and users are reporting HTTP 500 error!</textarea>
+            </div>
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <label style="font-size: 12px; font-weight: bold; margin-bottom: 6px; display: block;">Step Execution Logs</label>
+                <div id="logs" class="logs-box">Click "Execute Workflow" to start...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const nodes = new vis.DataSet([
+            { id: "1", label: "Root: Support Inquiry?\nPrompt: Is this a tech issue?", color: { background: "#1e293b", border: "#3b82f6" }, font: { color: "#fff" } },
+            { id: "2", label: "Branch 1: Critical Bug?\nPrompt: Is it blocking users?", color: { background: "#1e293b", border: "#3b82f6" }, font: { color: "#fff" } },
+            { id: "3", label: "Branch 2: Sales Prompt?\nPrompt: Is it enterprise lead?", color: { background: "#1e293b", border: "#3b82f6" }, font: { color: "#fff" } }
+        ]);
+
+        const edges = new vis.DataSet([
+            { from: "1", to: "2", label: "YES", color: { color: "#22c55e" }, arrows: "to" },
+            { from: "1", to: "3", label: "NO", color: { color: "#f59e0b" }, arrows: "to" }
+        ]);
+
+        const container = document.getElementById("network");
+        const network = new vis.Network(container, { nodes, edges }, {
+            layout: {
+                hierarchical: {
+                    enabled: true,
+                    direction: "UD",
+                    sortMethod: "directed",
+                    nodeSpacing: 200,
+                    levelSeparation: 150
+                }
+            },
+            physics: false,
+            edges: { font: { align: "top", color: "#ffffff" }, width: 2 }
+        });
+
+        const nodePrompts = {
+            "1": "Is this message reporting a technical failure or server bug?",
+            "2": "Is the user reporting critical downtime or severe error?",
+            "3": "Is the user asking about enterprise software pricing?"
+        };
+
+        function addNode() {
+            const id = String(nodes.length + 1);
+            const promptVal = prompt("Enter decision prompt for new node:", "Is this high priority?");
+            if (!promptVal) return;
+            nodePrompts[id] = promptVal;
+            nodes.add({ id, label: `Node ${id}\nPrompt: ${promptVal}`, color: { background: "#1e293b", border: "#3b82f6" }, font: { color: "#fff" } });
+        }
+
+        async function runWorkflow() {
+            const logsDiv = document.getElementById("logs");
+            logsDiv.innerText = "[START] Running workflow through AI steps...\n";
+
+            const payloadNodes = nodes.get().map(n => ({
+                id: n.id,
+                label: n.label.split("\n")[0],
+                prompt: nodePrompts[n.id] || "Is this a valid request?"
+            }));
+
+            const payloadEdges = edges.get().map(e => ({
+                source: e.from,
+                target: e.to,
+                type: e.label
+            }));
+
+            try {
+                const response = await fetch("/api/run-workflow", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        nodes: payloadNodes,
+                        edges: payloadEdges,
+                        input_text: document.getElementById("inputText").value
+                    })
+                });
+
+                const data = await response.json();
+                if (data.logs) {
+                    logsDiv.innerText = data.logs.join("\n");
+                } else {
+                    logsDiv.innerText += "\n[ERROR] Server response invalid: " + JSON.stringify(data);
+                }
+            } catch (err) {
+                logsDiv.innerText += "\n[ERROR] Request failed: " + err;
+            }
+        }
+    </script>
+</body>
+</html>
