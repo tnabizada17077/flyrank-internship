@@ -1,4 +1,4 @@
-# BE-08: PDF Report Generator API
+# BE-07: PDF Report Generator API
 
 ## Overview
 This backend application queries data stored in SQLite (`report.db`), aggregates key performance metrics, renders the results into an HTML document, and converts it into a multi-page PDF using Playwright (headless Chromium).
